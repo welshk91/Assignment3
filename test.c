@@ -11,6 +11,7 @@ December 8, 2011
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
+#include <unistd.h>
 
 int numD=0;		//Number of Directories
 int numF=0;		//Number of Files
@@ -19,6 +20,14 @@ int numDP=0;		//Number of Directories of specefied depth
 int numNS=0;		//Number of Non-Symbolic Links
 int numSL=0;		//Number of Symbolic Links
 int numSLN=0;		//Number of Symbolic Links with nonexistent files
+
+int sizeD=0;		//Size of Directories
+int sizeF=0;		//Size of Files
+int sizeDNR=0;		//Size of Directories which cannot be read
+int sizeDP=0;		//Size of Directories of specefied depth
+int sizeNS=0;		//Size of Non-Symbolic Links
+int sizeSL=0;		//Size of Symbolic Links
+int sizeSLN=0;		//Size of Symbolic Links with nonexistent files
 
 char lastMod[1024]="";	//Last Modified File
 time_t lastModDate;	//Last Modified File's Date
@@ -29,12 +38,27 @@ time_t lastStatDate;	//Last Status Changed File's Date
 char lastAcc[1024]="";	//Last Accessed File
 time_t lastAccDate;	//Last Accessed File's Date
 
+int biggestFile=0;		//Biggest File Size
+char biggestFileName[1024]="";	//Biggest File Name	
+int biggestDir=0;		//Biggest Directory Size
+char biggestDirName[1024]="";	//Biggest Directory Name
 
+int depth=0;		//Depth of search
+
+int rootFiles=0;	//Number of Root Files
+int userFiles=0;	//Number of User Files
+int otherFiles=0;	//Number of Files Owned by Others
+
+long long int size[512];	//Size array, index is the depth, value is the size of depth
+
+int numExe=0;		//Number of Executables
+int numRead=0;		//Number of Readable Files
+int numWrite=0;		//Number of Writable Files
+/*Display Info*/
 static int
 display_info(const char *fpath, const struct stat *sb,
              int tflag, struct FTW *ftwbuf)
 {
-
 
 	printf("%s\t",
         (tflag == FTW_D) ?   "dir"   : (tflag == FTW_DNR) ? "dir(cannot read)" :
@@ -52,7 +76,7 @@ display_info(const char *fpath, const struct stat *sb,
 	printf("%-5ld\t",(unsigned long) sb->st_mode);		//Mode
 	printf("%-5ld\t",(long)sb->st_uid);			//UID
 	printf("%-5ld\t",(long)sb->st_gid);			//GID
-	printf("%s",fpath);					//Path	
+	printf("%s\t",fpath);					//Path	
 	printf("\n");						
 	//printf("\tLast Access: %s",ctime(&sb->st_atime));	//Last Access
 	//printf("\tLast Status Change: %s",ctime(&sb->st_ctime));	//Last Status Change
@@ -62,30 +86,37 @@ display_info(const char *fpath, const struct stat *sb,
 	switch(tflag){
 		case FTW_D:
 		numD++;
+		sizeD = sizeD + (long long)sb->st_size;
 		break;
 
 		case FTW_DNR:
 		numDNR++;
+		sizeDNR = sizeDNR + (long long)sb->st_size;
 		break;
 
 		case FTW_DP:
 		numDP++;
+		sizeDP = sizeDP + (long long)sb->st_size;
 		break;
 
 		case FTW_F:
 		numF++;
+		sizeF = sizeF + (long long)sb->st_size;
 		break;
 
 		case FTW_SL:
 		numSL++;
+		sizeSL = sizeSL + (long long)sb->st_size;
 		break;
 
 		case FTW_NS:
 		numNS++;
+		sizeNS = sizeNS + (long long)sb->st_size;
 		break;
 
 		case FTW_SLN:
 		numSLN++;
+		sizeSLN = sizeSLN + (long long)sb->st_size;
 		break;
 
 		default:
@@ -94,17 +125,51 @@ display_info(const char *fpath, const struct stat *sb,
 		break;
 	}//end switch
 
+	/*Executables*/
+	if(access(fpath,X_OK)){
+		numExe++;
+	}
+	
+	/*Read*/
+	if(access(fpath,R_OK)){
+		numRead++;
+	}
+
+	/*Write*/
+	if(access(fpath,W_OK)){
+		numWrite++;
+	}
+
+	/*Depth*/
+	if(depth<(ftwbuf->level)){
+		depth = (ftwbuf->level);
+	}
+
+	/*Size*/
+	if(tflag==FTW_F){
+		size[(ftwbuf->level)] = size[(ftwbuf->level)] + sb->st_size; 
+	}
+
+	/*Root Files, User Files*/
+	if(tflag==FTW_F && (getuid()==(long)sb->st_uid)){
+		userFiles++;
+	}
+	else if(tflag==FTW_F && ((long)sb->st_uid)==0){
+		rootFiles++;
+	}
+	else if(tflag==FTW_F){
+		otherFiles++;
+	}
+
 	/*Last Modified File*/
 	if(tflag==FTW_F && strcmp(lastMod,"")==0){
 		//Undefined
-		//printf("undefined\n");
 		lastModDate = sb->st_mtime;
 		strncpy((char*)lastMod,fpath,sizeof(lastMod));
 				
 	}
 	else if(tflag==FTW_F && difftime(lastModDate,sb->st_mtime)<0){
 		//more recent file
-		//printf("more recent\n");
 		lastModDate = sb->st_mtime;
 		strncpy((char*)lastMod,fpath,sizeof(lastMod));
 		
@@ -113,14 +178,12 @@ display_info(const char *fpath, const struct stat *sb,
 	/*Last Status Changed File*/
 	if(tflag==FTW_F && strcmp(lastStat,"")==0){
 		//Undefined
-		//printf("undefined\n");
 		lastStatDate = sb->st_mtime;
 		strncpy((char*)lastStat,fpath,sizeof(lastStat));
 				
 	}
 	else if(tflag==FTW_F && difftime(lastStatDate,sb->st_mtime)<0){
 		//more recent file
-		//printf("more recent\n");
 		lastStatDate = sb->st_mtime;
 		strncpy((char*)lastStat,fpath,sizeof(lastStat));
 		
@@ -129,19 +192,40 @@ display_info(const char *fpath, const struct stat *sb,
 	/*Last Accessed File*/
 	if(tflag==FTW_F && strcmp(lastAcc,"")==0){
 		//Undefined
-		//printf("undefined\n");
 		lastAccDate = sb->st_mtime;
 		strncpy((char*)lastAcc,fpath,sizeof(lastAcc));
 				
 	}
 	else if(tflag==FTW_F && difftime(lastAccDate,sb->st_mtime)<0){
 		//more recent file
-		//printf("more recent\n");
 		lastAccDate = sb->st_mtime;
 		strncpy((char*)lastAcc,fpath,sizeof(lastAcc));
 		
 	}
 
+	/*Biggest File*/
+	if(tflag==FTW_F && biggestFile==0){
+		//Undefined
+		biggestFile = sb->st_size;
+		strncpy((char*)biggestFileName,fpath,sizeof(biggestFileName));				
+	}
+	else if(tflag==FTW_F && (sb->st_size>biggestFile)){
+		//bigger file
+		biggestFile = sb->st_size;
+		strncpy((char*)biggestFileName,fpath,sizeof(biggestFileName));
+	}
+
+	/*Biggest Directory*/
+	if(tflag==FTW_D && (ftwbuf->level>0) && biggestDir==0){
+		//Undefined
+		biggestDir = sb->st_size;
+		strncpy((char*)biggestDirName,fpath,sizeof(biggestDirName));				
+	}
+	else if(tflag==FTW_D && (ftwbuf->level>0) && (sb->st_size>biggestDir)){
+		//bigger file
+		biggestDir = sb->st_size;
+		strncpy((char*)biggestDirName,fpath,sizeof(biggestDirName));
+	}
 
 
     return 0;           /* To tell nftw() to continue */
@@ -181,16 +265,33 @@ main(int argc, char *argv[])
 	
 	printf("\nStatistics\n");	
 
-	printf("Number of Directories: %d \n",numD);
-	printf("Number of Files: %d \n", numF);	
-	printf("Number of Directories which cannot be read: %d \n", numDNR);
-	printf("Number of Directories of specified depth: %d \n", numDP);
-	printf("Number of Symbolic Links: %d \n", numSL);
-	printf("Number of Non-Symbolic Links: %d \n", numNS);
-	printf("Number of Symbolic Links pointing to nonexistent file: %d \n", numSLN);
+	printf("Directories: %-3d (%dbytes) \n",numD, sizeD);
+	printf("Files: %-3d  (%dbytes) \n", numF, sizeF);	
+	printf("Directories which cannot be read: %-3d (%dbytes)\n", numDNR, sizeDNR);
+	printf("Directories of specified depth: %-3d (%dbytes)\n", numDP, sizeDP);
+	printf("Symbolic Links: %-3d (%dbytes)\n", numSL, sizeSL);
+	printf("Non-Symbolic Links: %-3d (%dbytes)\n", numNS, sizeNS);
+	printf("Symbolic Links pointing to nonexistent file: %-3d (%dbytes)\n", numSLN, sizeSLN);
+	printf("Number of Executables: %-3d \n", numExe);
+	printf("Number of Readables: %-3d \n", numRead);
+	printf("Number of Writables: %-3d \n", numWrite);
+	printf("Depth: %d\n",depth);
+	printf("Number of files owned by Root: %d (%f%%)\n", rootFiles, ((rootFiles*100.0)/(numF)));
+	printf("Number of files owned by User: %d (%f%%)\n", userFiles, ((userFiles*100.0)/(numF)));
+	printf("Number of files owned by Others: %d (%f%%)\n", otherFiles, ((otherFiles*100.0)/(numF)));
 	printf("Last Modified File: %s \t %s",lastMod,ctime(&lastModDate));
 	printf("Last Accessed File: %s \t %s",lastAcc,ctime(&lastAccDate));
 	printf("Last File to Change Status: %s \t %s",lastStat,ctime(&lastStatDate));
+	printf("Biggest File: %s \t (%dbytes)\n",biggestFileName,biggestFile);
+	printf("Biggest Directory (depth>0): %s \t (%dbytes)\n",biggestDirName,biggestDir);
+
+
+	int i;
+	printf("Size of Each Level of Depth (bytes):\n");
+	for(i=0;i<depth+1;i++){	
+		printf("Size[%d]: %-20lld \t",i,(size[i]/1));
+	}
+	printf("\n");
 
 
     exit(EXIT_SUCCESS);
