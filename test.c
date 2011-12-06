@@ -16,19 +16,25 @@ display_info(const char *fpath, const struct stat *sb,
              int tflag, struct FTW *ftwbuf)
 {
 
-//Type Name Size Depth Offset Path %9zu\t
+//Type INode Name Size Blocks Block-Size Depth Offset Mode UID GID Path
 
-    printf("%s\t %-20s\t %-10jd\t %-6d\t %-5d\t %-8zu %s\n",
+    printf("%s\t %-8ld\t %-20s\t %-10lld\t %-5lld\t %-5ld\t %-6d\t %-5d\t %-5ld\t %-5ld\t %-5ld\t %s\n",
         (tflag == FTW_D) ?   "dir"   : (tflag == FTW_DNR) ? "dir(cannot read)" :
         (tflag == FTW_DP) ?  "dir(specified depth)"  : (tflag == FTW_F) ?   "file" :
         (tflag == FTW_NS) ?  "not symbolic"  : (tflag == FTW_SL) ?  "symbolic" :
         (tflag == FTW_SLN) ? "symbolic(no file)" : "???",
+	(long) sb->st_ino,	
 	fpath + ftwbuf->base,
-	(intmax_t) sb->st_size,        
+	(long long) sb->st_size,
+	(long long) sb->st_blocks,
+	(long) sb->st_blksize,       
 	ftwbuf->level,  
 	ftwbuf->base,
-	sb->st_ino,
-	fpath);
+	(unsigned long) sb->st_mode,
+	(long) sb->st_uid,
+	(long) sb->st_gid,
+	fpath
+	);
     return 0;           /* To tell nftw() to continue */
 }
 
@@ -37,7 +43,7 @@ main(int argc, char *argv[])
 {
     int flags = 0;
 	printf("\n----------------------------------------------------------------\n");
-	printf("%s\t %-20s\t %-10s\t %-6s\t %-5s\t %-8s %s \n", "Type", "Name", "Size(bytes)", "Depth", "Offset", "Inode", "Path");
+	printf("%s\t %-8s\t %-20s\t %-10s\t %-5s\t %-5s\t %-6s\t %-5s\t %-5s\t %-5s\t %-5s\t %s\n", "Type", "Inode", "Name", "Size(bytes)", "Blocks", "B-Size", "Depth", "Offset", "Mode", "UID", "GID", "Path");
 
    if (argc > 2 && strchr(argv[2], 'd') != NULL)
         flags |= FTW_DEPTH;
