@@ -54,6 +54,15 @@ long long int size[512];	//Size array, index is the depth, value is the size of 
 int numExe=0;		//Number of Executables
 int numRead=0;		//Number of Readable Files
 int numWrite=0;		//Number of Writable Files
+
+static unsigned int total = 0;	
+
+/*Calculates Size of Directory*/
+int sum(const char *fpath, const struct stat *sb, int typeflag) {
+    total += sb->st_size;
+    return 0;
+}
+
 /*Display Info*/
 static int
 display_info(const char *fpath, const struct stat *sb,
@@ -124,6 +133,19 @@ display_info(const char *fpath, const struct stat *sb,
 		exit(1);
 		break;
 	}//end switch
+
+	/*Calculate Size of directory + files*/
+	if(tflag==FTW_D){		
+		if (!fpath || access(fpath, R_OK)) {
+			return 1;
+	    	}
+	    	if (ftw(fpath, &sum, 1)) {
+	        	perror("ftw");
+        		return 2;
+		}
+    		printf("Total Size of '%s': %u\n", fpath, total);
+		total=0;
+	}
 
 	/*Executables*/
 	if(access(fpath,X_OK)){
