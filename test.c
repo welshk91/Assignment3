@@ -55,7 +55,47 @@ int numExe=0;		//Number of Executables
 int numRead=0;		//Number of Readable Files
 int numWrite=0;		//Number of Writable Files
 
-static unsigned int total = 0;	
+static unsigned int total=0;//Total size of directory
+
+/*Data holds directory name & it's size*/
+typedef struct {
+	char *name;
+	int size;
+} DATA;
+
+DATA *sizeArray = NULL;	//Array of DATA that holds size of directories
+int numElements = 0; 	//Number of elements in array
+int numAllocated = 0; 	//Size allocated to array	
+
+/*Adds Data to an array keeping track of directory sizes*/
+int AddToArray (DATA item)
+{
+	if(numElements == numAllocated) { // Are more refs required?
+		
+		if (numAllocated == 0){
+			numAllocated = 3;
+		}
+		else{
+			numAllocated = (int)(numAllocated*1.5); //Increase allocated size 
+		}
+
+		void *_tmp = realloc(sizeArray, (numAllocated * sizeof(DATA)));
+		
+		//Error in reallocating
+		if (!_tmp)
+		{ 
+			fprintf(stderr, "ERROR: Couldn't realloc memory!\n");
+			return(-1); 
+		}
+		 
+		sizeArray = (DATA*)_tmp;	
+	}
+	
+	sizeArray[numElements] = item; 
+	numElements++;
+	
+	return numElements;
+}
 
 /*Calculates Size of Directory*/
 int sum(const char *fpath, const struct stat *sb, int typeflag) {
@@ -143,7 +183,18 @@ display_info(const char *fpath, const struct stat *sb,
 	        	perror("ftw");
         		return 2;
 		}
-    		printf("Total Size of '%s': %u\n", fpath, total);
+    		//printf("Total Size of '%s': %u\n", fpath, total);
+
+		//Constructs a value to add
+		DATA temp;
+		temp.name = malloc((strlen(fpath) + 1) * sizeof(char));
+		strncpy(temp.name, fpath, strlen(fpath) + 1);
+		temp.size = total;
+		if (AddToArray(temp) == -1){
+			printf("Error Adding data to array\n Exiting...\n");		
+			return 1;
+		}
+		
 		total=0;
 	}
 
@@ -315,6 +366,21 @@ main(int argc, char *argv[])
 	}
 	printf("\n");
 
+	printf("Directories\n");
+	//Prints Array
+	for (i = 0; i < numElements; i++)
+	{
+		printf("Size of %s: %d\n", sizeArray[i].name, sizeArray[i].size);
+	}
+	
+	//Deallocate Elements & Array
+	for (i = 0; i < numElements; i++)
+	{
+		free(sizeArray[i].name);
+	}
+	free(sizeArray);	
+
+	
 
     exit(EXIT_SUCCESS);
 }
