@@ -13,6 +13,7 @@ December 8, 2011
 #include <time.h>
 #include <unistd.h>
 
+
 int numD=0;		//Number of Directories
 int numF=0;		//Number of Files
 int numDNR=0;		//Number of Directories which cannot be read
@@ -358,7 +359,6 @@ main(int argc, char *argv[])
 	printf("Biggest File: %s \t (%dbytes)\n",biggestFileName,biggestFile);
 	printf("Biggest Directory (depth>0): %s \t (%dbytes)\n",biggestDirName,biggestDir);
 
-
 	int i;
 	printf("Size of Each Level of Depth (bytes):\n");
 	for(i=0;i<depth+1;i++){	
@@ -372,15 +372,31 @@ main(int argc, char *argv[])
 	{
 		printf("Size of %s: %d\n", sizeArray[i].name, sizeArray[i].size);
 	}
+
+	//Create Graph with GNUPlot
+	FILE *pipe = popen("gnuplot -persist","w");
+	fprintf(pipe, "plot [-10:10] sin(x),atan(x),cos(atan(x))\n");
+	int status = pclose(pipe);
+	if(status==-1){
+		printf("Error Graphing. Do you have GNUplot installed?\nExiting...\n");
+		exit(1);
+	}
 	
+	//Create Graph2 with GNUPlot
+	FILE *pipe2 = popen("gnuplot -persist","w");
+	fprintf(pipe2, "plot [-5:5] sin(x),atan(x),cos(atan(x))\n");
+	int status2 = pclose(pipe2);
+	if(status2==-1){
+		printf("Error Graphing. Do you have GNUplot installed?\nExiting...\n");
+		exit(1);
+	}
+		
 	//Deallocate Elements & Array
 	for (i = 0; i < numElements; i++)
 	{
 		free(sizeArray[i].name);
 	}
 	free(sizeArray);	
-
-	
 
     exit(EXIT_SUCCESS);
 }
