@@ -22,13 +22,17 @@ int numNS=0;		//Number of Non-Symbolic Links
 int numSL=0;		//Number of Symbolic Links
 int numSLN=0;		//Number of Symbolic Links with nonexistent files
 
-int sizeD=0;		//Size of Directories
-int sizeF=0;		//Size of Files
-int sizeDNR=0;		//Size of Directories which cannot be read
-int sizeDP=0;		//Size of Directories of specefied depth
-int sizeNS=0;		//Size of Non-Symbolic Links
-int sizeSL=0;		//Size of Symbolic Links
-int sizeSLN=0;		//Size of Symbolic Links with nonexistent files
+long long int sizeD=0;		//Size of Directories
+long long int sizeF=0;		//Size of Files
+long long int sizeDNR=0;		//Size of Directories which cannot be read
+long long int sizeDP=0;		//Size of Directories of specefied depth
+long long int sizeNS=0;		//Size of Non-Symbolic Links
+long long int sizeSL=0;		//Size of Symbolic Links
+long long int sizeSLN=0;		//Size of Symbolic Links with nonexistent files
+
+long long int sizeRoot=0;	//Size Root takes up
+long long int sizeUser=0;	//Size User takes up
+long long int sizeOther=0;	//Size Others take up
 
 char lastMod[1024]="";	//Last Modified File
 time_t lastModDate;	//Last Modified File's Date
@@ -39,9 +43,9 @@ time_t lastStatDate;	//Last Status Changed File's Date
 char lastAcc[1024]="";	//Last Accessed File
 time_t lastAccDate;	//Last Accessed File's Date
 
-int biggestFile=0;		//Biggest File Size
+long long int biggestFile=0;	//Biggest File Size
 char biggestFileName[1024]="";	//Biggest File Name	
-int biggestDir=0;		//Biggest Directory Size
+long long int biggestDir=0;	//Biggest Directory Size
 char biggestDirName[1024]="";	//Biggest Directory Name
 
 int depth=0;		//Depth of search
@@ -199,40 +203,46 @@ display_info(const char *fpath, const struct stat *sb,
 		total=0;
 	}
 
-	/*Executables*/
+/*
+	//Executables
 	if(access(fpath,X_OK)){
 		numExe++;
 	}
 	
-	/*Read*/
+	//Read
 	if(access(fpath,R_OK)){
 		numRead++;
 	}
 
-	/*Write*/
+	//Write
 	if(access(fpath,W_OK)){
 		numWrite++;
 	}
 
-	/*Depth*/
+*/
+
+	/*Determines Biggest Depth*/
 	if(depth<(ftwbuf->level)){
 		depth = (ftwbuf->level);
 	}
 
-	/*Size*/
+	/*Size Based on each level of depth*/
 	if(tflag==FTW_F){
 		size[(ftwbuf->level)] = size[(ftwbuf->level)] + sb->st_size; 
 	}
 
-	/*Root Files, User Files*/
+	/*Root Files, User Files, Other Files (excludes directories)*/
 	if(tflag==FTW_F && (getuid()==(long)sb->st_uid)){
 		userFiles++;
+		sizeUser = sizeUser + (long long)sb->st_size;		
 	}
 	else if(tflag==FTW_F && ((long)sb->st_uid)==0){
 		rootFiles++;
+		sizeRoot = sizeRoot + (long long)sb->st_size;
 	}
 	else if(tflag==FTW_F){
 		otherFiles++;
+		sizeOther = sizeOther + (long long)sb->st_size;
 	}
 
 	/*Last Modified File*/
@@ -339,13 +349,13 @@ main(int argc, char *argv[])
 	
 	printf("\nStatistics\n");	
 
-	printf("Directories: %-3d (%dbytes) \n",numD, sizeD);
-	printf("Files: %-3d  (%dbytes) \n", numF, sizeF);	
-	printf("Directories which cannot be read: %-3d (%dbytes)\n", numDNR, sizeDNR);
-	printf("Directories of specified depth: %-3d (%dbytes)\n", numDP, sizeDP);
-	printf("Symbolic Links: %-3d (%dbytes)\n", numSL, sizeSL);
-	printf("Non-Symbolic Links: %-3d (%dbytes)\n", numNS, sizeNS);
-	printf("Symbolic Links pointing to nonexistent file: %-3d (%dbytes)\n", numSLN, sizeSLN);
+	printf("Directories: %-3d (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n",numD, sizeD, sizeD/1024.0, sizeD/1048576.0, sizeD/1073741824.0);
+	printf("Files: %-3d  (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n", numF, sizeF, sizeF/1024.0, sizeF/1048576.0, sizeF/1073741824.0);	
+	printf("Directories which cannot be read: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numDNR, sizeDNR, sizeDNR/1024.0, sizeDNR/1048576.0);
+	printf("Directories of specified depth: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numDP, sizeDP, sizeDP/1024.0, sizeDP/1048576.0);
+	printf("Symbolic Links: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numSL, sizeSL, sizeSL/1024.0, sizeSL/1048576.0);
+	printf("Non-Symbolic Links: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numNS, sizeNS, sizeNS/1024.0, sizeNS/1048576.0);
+	printf("Symbolic Links pointing to nonexistent file: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numSLN, sizeSLN, sizeSLN/1024.0, sizeSLN/1048576.0);
 	printf("Number of Executables: %-3d \n", numExe);
 	printf("Number of Readables: %-3d \n", numRead);
 	printf("Number of Writables: %-3d \n", numWrite);
@@ -356,11 +366,15 @@ main(int argc, char *argv[])
 	printf("Last Modified File: %s \t %s",lastMod,ctime(&lastModDate));
 	printf("Last Accessed File: %s \t %s",lastAcc,ctime(&lastAccDate));
 	printf("Last File to Change Status: %s \t %s",lastStat,ctime(&lastStatDate));
-	printf("Biggest File: %s \t (%dbytes)\n",biggestFileName,biggestFile);
-	printf("Biggest Directory (depth>0): %s \t (%dbytes)\n",biggestDirName,biggestDir);
+	printf("Biggest File: %s \t (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n",biggestFileName,biggestFile, biggestFile/1024.0, biggestFile/1048576.0,biggestFile/1073741824.0);
+	printf("Biggest Directory (depth>0): %s \t (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n",biggestDirName,biggestDir, biggestDir/1024.0, biggestDir/1048576.0,biggestDir/1073741824.0);
+	printf("Size of Root: %lld bytes \t %f KB \t %f MB \t %f GB\n", sizeRoot,sizeRoot/1024.0, sizeRoot/1048576.0, sizeRoot/1073741824.0);
+	printf("Size of User: %lld bytes \t %f KB \t %f MB \t %f GB\n", sizeUser,sizeUser/1024.0, sizeUser/1048576.0, sizeUser/1073741824.0);
+	printf("Size of Other:%lld bytes \t %f KB \t %f MB \t %f GB\n", sizeOther,sizeOther/1024.0, sizeOther/1048576.0, sizeOther/1073741824.0);
+	printf("Total Size:   %lld bytes \t %f KB \t %f MB \t %f GB\n", (sizeRoot+sizeUser+sizeOther), (sizeRoot+sizeUser+sizeOther)/1024.0, (sizeRoot+sizeUser+sizeOther)/1048576.0,(sizeRoot+sizeUser+sizeOther)/1073741824.0);
 
 	int i;
-	printf("Size of Each Level of Depth (bytes):\n");
+/*	printf("Size of Each Level of Depth (bytes):\n");
 	for(i=0;i<depth+1;i++){	
 		printf("Size[%d]: %-20lld \t",i,(size[i]/1));
 	}
@@ -372,24 +386,42 @@ main(int argc, char *argv[])
 	{
 		printf("Size of %s: %d\n", sizeArray[i].name, sizeArray[i].size);
 	}
+*/
+
+/*
+	//Set-Up Data for Graphing
+	FILE *file = fopen("output1.dat","w+");
+	fprintf(file,"User\tRoot\tOther\n");
+	fprintf(file,"%d\t0\t0\n", userFiles);
+	fprintf(file,"0\t%d\t0\n", rootFiles);
+	fprintf(file,"0\t0\t%d\n", otherFiles);
+	fclose(file);
 
 	//Create Graph with GNUPlot
 	FILE *pipe = popen("gnuplot -persist","w");
-	fprintf(pipe, "plot [-10:10] sin(x),atan(x),cos(atan(x))\n");
+	fprintf(pipe,"set size 1,1\n");
+	fprintf(pipe, "set title 'User Usage' font 'Utopia,28'\n");
+	fprintf(pipe, "set xlabel 'Users' font 'Utopia,18'\n");
+	fprintf(pipe, "set ylabel 'Size' font 'Utopia,18'\n");
+	fprintf(pipe, "set boxwidth 0.9\n");
+	fprintf(pipe, "set border 3\n");
+	fprintf(pipe, "set xtic nomirror\n");
+	fprintf(pipe, "set noxtic \n");
+	fprintf(pipe, "set ytic nomirror\n");
+	fprintf(pipe, "set style data histogram\n");
+	fprintf(pipe, "set xrange [-1:3]\n");
+	fprintf(pipe, "set style histogram cluster gap 1\n");
+	fprintf(pipe, "set style fill solid border -1\n");
+	fprintf(pipe, "plot 'output1.dat' using 1 with boxes title col, 'output1.dat' using 2 with boxes title col, 'output1.dat' using 3 with boxes title col\n");
+	//fprintf(pipe,"set terminal png\n");
+
 	int status = pclose(pipe);
 	if(status==-1){
 		printf("Error Graphing. Do you have GNUplot installed?\nExiting...\n");
 		exit(1);
 	}
 	
-	//Create Graph2 with GNUPlot
-	FILE *pipe2 = popen("gnuplot -persist","w");
-	fprintf(pipe2, "plot [-5:5] sin(x),atan(x),cos(atan(x))\n");
-	int status2 = pclose(pipe2);
-	if(status2==-1){
-		printf("Error Graphing. Do you have GNUplot installed?\nExiting...\n");
-		exit(1);
-	}
+*/
 		
 	//Deallocate Elements & Array
 	for (i = 0; i < numElements; i++)
