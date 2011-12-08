@@ -230,7 +230,8 @@ display_info(const char *fpath, const struct stat *sb,
 	}//end switch
  
 	/*Calculate Size of directory + files, AVOID DEV DIRECTORY*/
-	if(tflag==FTW_D || !strncmp(fpath,"/dev",4)){		
+	//if(tflag==FTW_D || !strncmp(fpath,"/dev",4)){		
+	if(tflag==FTW_D){	
 		if (!fpath || access(fpath, R_OK)) {
 			return 1;
 	    	}
@@ -259,7 +260,7 @@ display_info(const char *fpath, const struct stat *sb,
 
 	/*Size Based on each level of depth*/
 	if(tflag==FTW_F){
-		size[(ftwbuf->level)] = size[(ftwbuf->level)] + sb->st_size; 
+		size[(ftwbuf->level)] = size[(ftwbuf->level)] + (long long)sb->st_size; 
 	}
 
 	/*Root Files, User Files, Other Files (excludes directories)*/
@@ -321,24 +322,24 @@ display_info(const char *fpath, const struct stat *sb,
 	/*Biggest File*/
 	if(tflag==FTW_F && biggestFile==0){
 		//Undefined
-		biggestFile = sb->st_size;
+		biggestFile = (long long)sb->st_size;
 		strncpy((char*)biggestFileName,fpath,sizeof(biggestFileName));				
 	}
 	else if(tflag==FTW_F && (sb->st_size>biggestFile)){
 		//bigger file
-		biggestFile = sb->st_size;
+		biggestFile = (long long)sb->st_size;
 		strncpy((char*)biggestFileName,fpath,sizeof(biggestFileName));
 	}
 
 	/*Biggest Directory*/
 	if(tflag==FTW_D && (ftwbuf->level>0) && biggestDir==0){
 		//Undefined
-		biggestDir = sb->st_size;
+		biggestDir = (long long)sb->st_size;
 		strncpy((char*)biggestDirName,fpath,sizeof(biggestDirName));				
 	}
 	else if(tflag==FTW_D && (ftwbuf->level>0) && (sb->st_size>biggestDir)){
 		//bigger file
-		biggestDir = sb->st_size;
+		biggestDir = (long long)sb->st_size;
 		strncpy((char*)biggestDirName,fpath,sizeof(biggestDirName));
 	}
 
@@ -458,7 +459,9 @@ main(int argc, char *argv[])
 
 	//Create Files Graph with GNUPlot
 	FILE *pipe = popen("gnuplot -persist","w");
-	fprintf(pipe,"set size 1,1\n");
+	fprintf(pipe, "set terminal postscript color solid\n");	
+	//fprintf(pipe, "set terminal png\n");	
+	fprintf(pipe, "set size 1,1\n");
 	fprintf(pipe, "set title 'Number of Files per User' font 'Utopia,28'\n");
 	fprintf(pipe, "set xlabel 'Users' font 'Utopia,18'\n");
 	fprintf(pipe, "set ylabel 'Files' font 'Utopia,18'\n");
@@ -471,6 +474,7 @@ main(int argc, char *argv[])
 	fprintf(pipe, "set xrange [-1:3]\n");
 	fprintf(pipe, "set style histogram cluster gap 1\n");
 	fprintf(pipe, "set style fill solid border -1\n");
+	fprintf(pipe, "set output 'graph_files.ps'\n");
 	fprintf(pipe, "plot 'output1.dat' using 1 with boxes title col, 'output1.dat' using 2 with boxes title col, 'output1.dat' using 3 with boxes title col\n");
 
 	int status = pclose(pipe);
@@ -481,7 +485,9 @@ main(int argc, char *argv[])
 
 	//Create Size Graph
 	pipe = popen("gnuplot -persist","w");
-	fprintf(pipe,"set size 1,1\n");
+	fprintf(pipe, "set terminal postscript color solid\n");	
+	//fprintf(pipe, "set terminal png\n");
+	fprintf(pipe, "set size 1,1\n");
 	fprintf(pipe, "set title 'Disk Usage per User' font 'Utopia,28'\n");
 	fprintf(pipe, "set xlabel 'Users' font 'Utopia,18'\n");
 	fprintf(pipe, "set ylabel 'Size (Kb)' font 'Utopia,18'\n");
@@ -494,6 +500,7 @@ main(int argc, char *argv[])
 	fprintf(pipe, "set xrange [-1:3]\n");
 	fprintf(pipe, "set style histogram cluster gap 1\n");
 	fprintf(pipe, "set style fill solid border -1\n");
+	fprintf(pipe, "set output 'graph_size.ps'\n");
 	fprintf(pipe, "plot 'output2.dat' using 1 with boxes title col, 'output2.dat' using 2 with boxes title col, 'output2.dat' using 3 with boxes title col\n");
 
 	status = pclose(pipe);
@@ -516,6 +523,7 @@ main(int argc, char *argv[])
 	if (remove("output2.dat") == -1){
   		perror("Error deleting output1.dat");
 	}
+
 
     exit(EXIT_SUCCESS);
 }
