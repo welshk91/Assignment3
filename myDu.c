@@ -66,7 +66,7 @@ FILE *file;			//FILE pointer to handle files for logging and graphs
 
 long long int size[512];	//Size array, index is the depth, value is the size of depth
 
-static unsigned int total=0;	//Total size of directory
+static unsigned long long int total=0;	//Total size of directory
 
 /*Data holds directory name & it's size*/
 typedef struct {
@@ -112,7 +112,7 @@ int AddToArray (DATA item)
 
 /*Calculates Size of Directory*/
 int sum(const char *fpath, const struct stat *sb, int typeflag) {
-    total += sb->st_size;
+    total += (long long)sb->st_size;
     return 0;
 }
 
@@ -293,13 +293,13 @@ display_info(const char *fpath, const struct stat *sb,
 	/*Last Status Changed File*/
 	if(tflag==FTW_F && strcmp(lastStat,"")==0){
 		//Undefined
-		lastStatDate = sb->st_mtime;
+		lastStatDate = sb->st_ctime;
 		strncpy((char*)lastStat,fpath,sizeof(lastStat));
 				
 	}
 	else if(tflag==FTW_F && difftime(lastStatDate,sb->st_mtime)<0){
 		//more recent file
-		lastStatDate = sb->st_mtime;
+		lastStatDate = sb->st_ctime;
 		strncpy((char*)lastStat,fpath,sizeof(lastStat));
 		
 	}
@@ -307,13 +307,13 @@ display_info(const char *fpath, const struct stat *sb,
 	/*Last Accessed File*/
 	if(tflag==FTW_F && strcmp(lastAcc,"")==0){
 		//Undefined
-		lastAccDate = sb->st_mtime;
+		lastAccDate = sb->st_atime;
 		strncpy((char*)lastAcc,fpath,sizeof(lastAcc));
 				
 	}
 	else if(tflag==FTW_F && difftime(lastAccDate,sb->st_mtime)<0){
 		//more recent file
-		lastAccDate = sb->st_mtime;
+		lastAccDate = sb->st_atime;
 		strncpy((char*)lastAcc,fpath,sizeof(lastAcc));
 		
 	}
