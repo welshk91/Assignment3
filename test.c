@@ -75,13 +75,14 @@ int numAllocated = 0; 	//Size allocated to array
 /*Adds Data to an array keeping track of directory sizes*/
 int AddToArray (DATA item)
 {
-	if(numElements == numAllocated) { // Are more refs required?
+	//Need More Space
+	if(numElements == numAllocated) {
 		
 		if (numAllocated == 0){
-			numAllocated = 3;
+			numAllocated = 20;
 		}
 		else{
-			numAllocated = (int)(numAllocated*1.5); //Increase allocated size 
+			numAllocated = (int)(numAllocated*1.2); //Increase allocated size 
 		}
 
 		void *_tmp = realloc(sizeArray, (numAllocated * sizeof(DATA)));
@@ -178,9 +179,9 @@ display_info(const char *fpath, const struct stat *sb,
 		exit(1);
 		break;
 	}//end switch
-
-	/*Calculate Size of directory + files*/
-	if(tflag==FTW_D){		
+ 
+	/*Calculate Size of directory + files, AVOID DEV DIRECTORY*/
+	if(tflag==FTW_D || !strncmp(fpath,"/dev",4)){		
 		if (!fpath || access(fpath, R_OK)) {
 			return 1;
 	    	}
@@ -188,7 +189,6 @@ display_info(const char *fpath, const struct stat *sb,
 	        	perror("ftw");
         		return 2;
 		}
-    		//printf("Total Size of '%s': %u\n", fpath, total);
 
 		//Constructs a value to add
 		DATA temp;
@@ -380,15 +380,14 @@ main(int argc, char *argv[])
 	}
 	printf("\n");
 
+*/
 	printf("Directories\n");
 	//Prints Array
 	for (i = 0; i < numElements; i++)
 	{
 		printf("Size of %s: %d\n", sizeArray[i].name, sizeArray[i].size);
 	}
-*/
 
-/*
 	//Set-Up Data for Graphing
 	FILE *file = fopen("output1.dat","w+");
 	fprintf(file,"User\tRoot\tOther\n");
@@ -397,12 +396,20 @@ main(int argc, char *argv[])
 	fprintf(file,"0\t0\t%d\n", otherFiles);
 	fclose(file);
 
-	//Create Graph with GNUPlot
+	//Set-Up Data for Graphing
+	file = fopen("output2.dat","w+");
+	fprintf(file,"User\tRoot\tOther\n");
+	fprintf(file,"%lld\t0\t0\n", sizeUser/1024);
+	fprintf(file,"0\t%lld\t0\n", sizeRoot/1024);
+	fprintf(file,"0\t0\t%lld\n", sizeOther/1024);
+	fclose(file);
+
+	//Create Files Graph with GNUPlot
 	FILE *pipe = popen("gnuplot -persist","w");
 	fprintf(pipe,"set size 1,1\n");
-	fprintf(pipe, "set title 'User Usage' font 'Utopia,28'\n");
+	fprintf(pipe, "set title 'Number of Files per User' font 'Utopia,28'\n");
 	fprintf(pipe, "set xlabel 'Users' font 'Utopia,18'\n");
-	fprintf(pipe, "set ylabel 'Size' font 'Utopia,18'\n");
+	fprintf(pipe, "set ylabel 'Files' font 'Utopia,18'\n");
 	fprintf(pipe, "set boxwidth 0.9\n");
 	fprintf(pipe, "set border 3\n");
 	fprintf(pipe, "set xtic nomirror\n");
@@ -413,16 +420,38 @@ main(int argc, char *argv[])
 	fprintf(pipe, "set style histogram cluster gap 1\n");
 	fprintf(pipe, "set style fill solid border -1\n");
 	fprintf(pipe, "plot 'output1.dat' using 1 with boxes title col, 'output1.dat' using 2 with boxes title col, 'output1.dat' using 3 with boxes title col\n");
-	//fprintf(pipe,"set terminal png\n");
 
 	int status = pclose(pipe);
 	if(status==-1){
 		printf("Error Graphing. Do you have GNUplot installed?\nExiting...\n");
 		exit(1);
 	}
-	
-*/
-		
+
+	//Create Size Graph
+	pipe = popen("gnuplot -persist","w");
+	fprintf(pipe,"set size 1,1\n");
+	fprintf(pipe, "set title 'Disk Usage per User' font 'Utopia,28'\n");
+	fprintf(pipe, "set xlabel 'Users' font 'Utopia,18'\n");
+	fprintf(pipe, "set ylabel 'Size (Kb)' font 'Utopia,18'\n");
+	fprintf(pipe, "set boxwidth 0.9\n");
+	fprintf(pipe, "set border 3\n");
+	fprintf(pipe, "set xtic nomirror\n");
+	fprintf(pipe, "set noxtic \n");
+	fprintf(pipe, "set ytic nomirror\n");
+	fprintf(pipe, "set style data histogram\n");
+	fprintf(pipe, "set xrange [-1:3]\n");
+	fprintf(pipe, "set style histogram cluster gap 1\n");
+	fprintf(pipe, "set style fill solid border -1\n");
+	fprintf(pipe, "plot 'output2.dat' using 1 with boxes title col, 'output2.dat' using 2 with boxes title col, 'output2.dat' using 3 with boxes title col\n");
+
+	status = pclose(pipe);
+	if(status==-1){
+		printf("Error Graphing. Do you have GNUplot installed?\nExiting...\n");
+		exit(1);
+	}
+
+
+			
 	//Deallocate Elements & Array
 	for (i = 0; i < numElements; i++)
 	{
