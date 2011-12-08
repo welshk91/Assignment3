@@ -298,7 +298,7 @@ display_info(const char *fpath, const struct stat *sb,
 		strncpy((char*)lastStat,fpath,sizeof(lastStat));
 				
 	}
-	else if(tflag==FTW_F && difftime(lastStatDate,sb->st_mtime)<0){
+	else if(tflag==FTW_F && difftime(lastStatDate,sb->st_ctime)<0){
 		//more recent file
 		lastStatDate = sb->st_ctime;
 		strncpy((char*)lastStat,fpath,sizeof(lastStat));
@@ -312,7 +312,7 @@ display_info(const char *fpath, const struct stat *sb,
 		strncpy((char*)lastAcc,fpath,sizeof(lastAcc));
 				
 	}
-	else if(tflag==FTW_F && difftime(lastAccDate,sb->st_mtime)<0){
+	else if(tflag==FTW_F && difftime(lastAccDate,sb->st_atime)<0){
 		//more recent file
 		lastAccDate = sb->st_atime;
 		strncpy((char*)lastAcc,fpath,sizeof(lastAcc));
@@ -399,26 +399,26 @@ main(int argc, char *argv[])
 	
 	printf("\nStatistics\n");	
 
-	printf("Directories: %-3d (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n",numD, sizeD, sizeD/1024.0, sizeD/1048576.0, sizeD/1073741824.0);
-	printf("Files: %-3d  (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n", numF, sizeF, sizeF/1024.0, sizeF/1048576.0, sizeF/1073741824.0);	
-	printf("Directories (cannot be read): %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numDNR, sizeDNR, sizeDNR/1024.0, sizeDNR/1048576.0);
-	printf("Directories (specified depth): %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numDP, sizeDP, sizeDP/1024.0, sizeDP/1048576.0);
-	printf("Symbolic Links: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numSL, sizeSL, sizeSL/1024.0, sizeSL/1048576.0);
-	printf("Non-Symbolic Links: %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n", numNS, sizeNS, sizeNS/1024.0, sizeNS/1048576.0);
-	printf("Symbolic Links (nonexistent file): %-3d (%lldbytes) \t (%f KB) \t (%f MB)\n\n", numSLN, sizeSLN, sizeSLN/1024.0, sizeSLN/1048576.0);
+	printf("Directories:				%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB) \t (%-9f GB)\n",numD, sizeD, sizeD/1024.0, sizeD/1048576.0, sizeD/1073741824.0);
+	printf("Files:					%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB) \t (%-9f GB)\n", numF, sizeF, sizeF/1024.0, sizeF/1048576.0, sizeF/1073741824.0);
+	printf("Directories (cannot be read): 		%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB)\n", numDNR, sizeDNR, sizeDNR/1024.0, sizeDNR/1048576.0);
+	printf("Directories (specified depth):	 	%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB)\n", numDP, sizeDP, sizeDP/1024.0, sizeDP/1048576.0);
+	printf("Symbolic Links: 			%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB)\n", numSL, sizeSL, sizeSL/1024.0, sizeSL/1048576.0);
+	printf("Non-Symbolic Links: 			%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB)\n", numNS, sizeNS, sizeNS/1024.0, sizeNS/1048576.0);
+	printf("Symbolic Links (nonexistent file): 	%-5d (%-10lldbytes) \t (%-10f KB) \t (%-10f MB)\n\n", numSLN, sizeSLN, sizeSLN/1024.0, sizeSLN/1048576.0);
 	printf("Depth: %d\n",depth);
-	printf("Number of files owned by Root: %d (%f%%)\n", rootFiles, ((rootFiles*100.0)/(numF)));
-	printf("Number of files owned by User: %d (%f%%)\n", userFiles, ((userFiles*100.0)/(numF)));
-	printf("Number of files owned by Others: %d (%f%%)\n\n", otherFiles, ((otherFiles*100.0)/(numF)));
-	printf("Last Modified File: %s \t %s",lastMod,ctime(&lastModDate));
-	printf("Last Accessed File: %s \t %s",lastAcc,ctime(&lastAccDate));
-	printf("Last File to Change Status: %s \t %s\n",lastStat,ctime(&lastStatDate));
-	printf("Biggest File: %s \t (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n",biggestFileName,biggestFile, biggestFile/1024.0, biggestFile/1048576.0,biggestFile/1073741824.0);
-	printf("Biggest Directory (depth>0): %s \t (%lldbytes) \t (%f KB) \t (%f MB) \t (%f GB)\n\n",biggestDirName,biggestDir, biggestDir/1024.0, biggestDir/1048576.0,biggestDir/1073741824.0);
-	printf("Size of Root: %lld bytes \t %f KB \t %f MB \t %f GB\n", sizeRoot,sizeRoot/1024.0, sizeRoot/1048576.0, sizeRoot/1073741824.0);
-	printf("Size of User: %lld bytes \t %f KB \t %f MB \t %f GB\n", sizeUser,sizeUser/1024.0, sizeUser/1048576.0, sizeUser/1073741824.0);
-	printf("Size of Other:%lld bytes \t %f KB \t %f MB \t %f GB\n", sizeOther,sizeOther/1024.0, sizeOther/1048576.0, sizeOther/1073741824.0);
-	printf("Total Size:   %lld bytes \t %f KB \t %f MB \t %f GB\n", (sizeRoot+sizeUser+sizeOther), (sizeRoot+sizeUser+sizeOther)/1024.0, (sizeRoot+sizeUser+sizeOther)/1048576.0,(sizeRoot+sizeUser+sizeOther)/1073741824.0);
+	printf("Number of files owned by Root: 	%-5d (%f%%)\n", rootFiles, ((rootFiles*100.0)/(numF)));
+	printf("Number of files owned by User: 	%-5d (%f%%)\n", userFiles, ((userFiles*100.0)/(numF)));
+	printf("Number of files owned by Others:%-5d (%f%%)\n\n", otherFiles, ((otherFiles*100.0)/(numF)));
+	printf("Last Modified File: 		%-30s \t %-20s",lastMod,ctime(&lastModDate));
+	printf("Last Accessed File: 		%-30s \t %-20s",lastAcc,ctime(&lastAccDate));
+	printf("Last File to Change Status: 	%-30s \t %-20s\n",lastStat,ctime(&lastStatDate));
+	printf("Biggest File: 			%-30s \t(%10lldbytes)\t(%15f KB)\t(%15f MB)\t(%8f GB)\n",biggestFileName,biggestFile, biggestFile/1024.0, biggestFile/1048576.0,biggestFile/1073741824.0);
+	printf("Biggest Directory (depth>0): 	%-30s \t(%10lldbytes)\t(%15f KB)\t(%15f MB)\t(%8f GB)\n\n",biggestDirName,biggestDir, biggestDir/1024.0, biggestDir/1048576.0,biggestDir/1073741824.0);
+	printf("Size of Root: %20lld bytes \t %20f KB \t %15f MB \t %10f GB\n", sizeRoot,sizeRoot/1024.0, sizeRoot/1048576.0, sizeRoot/1073741824.0);
+	printf("Size of User: %20lld bytes \t %20f KB \t %15f MB \t %10f GB\n", sizeUser,sizeUser/1024.0, sizeUser/1048576.0, sizeUser/1073741824.0);
+	printf("Size of Other:%20lld bytes \t %20f KB \t %15f MB \t %10f GB\n", sizeOther,sizeOther/1024.0, sizeOther/1048576.0, sizeOther/1073741824.0);
+	printf("Total Size:   %20lld bytes \t %20f KB \t %15f MB \t %10f GB\n", (sizeRoot+sizeUser+sizeOther), (sizeRoot+sizeUser+sizeOther)/1024.0, (sizeRoot+sizeUser+sizeOther)/1048576.0,(sizeRoot+sizeUser+sizeOther)/1073741824.0);
 
 	int i;
 /*	//Print Size at each depth-level
