@@ -64,7 +64,7 @@ int otherFiles=0;		//Number of Files Owned by Others
 
 FILE *file;			//FILE pointer to handle files for logging and graphs
 
-long long int size[512];	//Size array, index is the depth, value is the size of depth
+long long int size[512];	//Size array, index is the depth, value is the size used by each depth
 
 static unsigned long long int total=0;	//Total size of directory
 
