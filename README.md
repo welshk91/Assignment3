@@ -7,17 +7,17 @@ Goal
 -----
 This program is suppose to traverse a Linux file system, gathering data. Should be able to do much of what 'du' can do.
 
-Steps:
+Steps
 1. Make a terminal program that can traverse through the Linux filesystem. 
 2. Try to gather data from each file's inode
 3. Output statistics
 
-Extra Credit Ideas:
+Extra Credit Ideas
 1. Grab more information
 2. Make a graph or visual representation of the data
 3. Make a GUI (GTK+, Qt...) for the program
 
-Things To Improve:
+Things To Improve
 1. Check for memory leaks
 2. Make more graphs
 
